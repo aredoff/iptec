@@ -39,6 +39,11 @@ func (a *App) Use(p Plugin) {
 	if ok {
 		cachMixin.cashInitialization(p.Name(), a.cash)
 	}
+
+	webclientMixin, ok := p.(webclientMixinInterface)
+	if ok {
+		webclientMixin.webclientInitialization()
+	}
 }
 
 func (a *App) Activate() {

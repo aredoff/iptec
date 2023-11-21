@@ -17,8 +17,9 @@ func New() *Asn {
 
 type Asn struct {
 	name string
-	iptec.СuratorMixin
+	iptec.Сurator
 	iptec.Cash
+	iptec.WebClient
 }
 
 func (p *Asn) Name() string {
@@ -40,6 +41,7 @@ func (p *Asn) Activate() error {
 		return fmt.Errorf("cant get cash err=%s", err)
 	}
 	log.Warning(string(res2))
+	p.Client.Get("https://google.ru")
 	// download()
 	return nil
 }

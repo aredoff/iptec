@@ -16,7 +16,7 @@ func New() *Dns {
 
 type Dns struct {
 	name string
-	iptec.СuratorMixin
+	iptec.Сurator
 	iptec.Cash
 }
 

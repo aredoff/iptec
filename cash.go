@@ -30,7 +30,7 @@ type cash struct {
 func (c *cash) Close() {
 	err := c.db.Close()
 	if err != nil {
-
+		clog.Error(err)
 	}
 }
 
