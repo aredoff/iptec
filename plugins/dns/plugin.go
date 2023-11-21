@@ -17,13 +17,21 @@ func New() *Dns {
 type Dns struct {
 	name string
 	iptec.СuratorMixin
-	iptec.CashMixin
+	iptec.Cash
 }
 
 func (p *Dns) Name() string {
 	return p.name
 }
 
-func (p *Dns) Activate() {
-	log.Warning("ACTIVATION " + p.Name())
+func (p *Dns) Activate() error {
+	p.Log.Info("ACTIVATION " + p.Name())
+	return nil
+}
+
+func (p *Dns) Find(address string) (interface{}, error) {
+	a := DnsResult{
+		asn: "test",
+	}
+	return a, nil
 }

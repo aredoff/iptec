@@ -7,11 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
+	clog "github.com/aredoff/iptec/log"
 	"github.com/dgraph-io/badger/v4"
 )
 
 func NewCach() *cash {
 	opt := badger.DefaultOptions(filepath.Join(os.TempDir(), "iptec"))
+	opt.Logger = clog.NewWithPlugin("cash")
 	db, err := badger.Open(opt)
 	if err != nil {
 		log.Fatal(err)
@@ -26,24 +28,27 @@ type cash struct {
 }
 
 func (c *cash) Close() {
-	c.db.Close()
+	err := c.db.Close()
+	if err != nil {
+
+	}
 }
 
-type CashMixinInterface interface {
+type cashMixinInterface interface {
 	cashInitialization(string, *cash)
 }
 
-type CashMixin struct {
+type Cash struct {
 	prefix string
 	cash   *cash
 }
 
-func (m *CashMixin) cashInitialization(prefix string, cash *cash) {
+func (m *Cash) cashInitialization(prefix string, cash *cash) {
 	m.prefix = prefix
 	m.cash = cash
 }
 
-func (m *CashMixin) CashGet(key string) ([]byte, error) {
+func (m *Cash) Get(key string) ([]byte, error) {
 	var value []byte
 	return value, m.cash.db.View(
 		func(tx *badger.Txn) error {
@@ -59,14 +64,14 @@ func (m *CashMixin) CashGet(key string) ([]byte, error) {
 		})
 }
 
-func (m *CashMixin) CashSet(key string, data []byte) error {
+func (m *Cash) Set(key string, data []byte) error {
 	return m.cash.db.Update(
 		func(txn *badger.Txn) error {
 			return txn.Set(m.prepareKey(key), data)
 		})
 }
 
-func (m *CashMixin) CashExist(key string) (bool, error) {
+func (m *Cash) Exist(key string) (bool, error) {
 	var exists bool
 	err := m.cash.db.View(
 		func(tx *badger.Txn) error {
@@ -83,13 +88,13 @@ func (m *CashMixin) CashExist(key string) (bool, error) {
 	return exists, err
 }
 
-func (m *CashMixin) CashDelete(key string) error {
+func (m *Cash) Delete(key string) error {
 	return m.cash.db.Update(
 		func(txn *badger.Txn) error {
 			return txn.Delete(m.prepareKey(key))
 		})
 }
 
-func (m *CashMixin) prepareKey(key string) []byte {
+func (m *Cash) prepareKey(key string) []byte {
 	return []byte(fmt.Sprintf("%s:%s", m.prefix, key))
 }
