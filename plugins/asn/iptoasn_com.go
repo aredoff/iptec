@@ -17,22 +17,22 @@ const (
 	url = "https://iptoasn.com/data/ip2asn-combined.tsv.gz"
 )
 
-func download() {
+func download() error {
 	clog.Info("Start update asn database...")
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	gzipReader, err := gzip.NewReader(bytes.NewReader(body))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// output, e2 := io.ReadAll(gzipReader)
@@ -50,23 +50,19 @@ func download() {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			fmt.Println(err)
-			return
+			return err
 		}
 		start, err := netip.ParseAddr(row[0])
 		if err != nil {
-			clog.Errorf("invalid start address #%s: %s", row[0], err)
-			return
+			return fmt.Errorf("invalid start address #%s: %s", row[0], err)
 		}
 		end, err := netip.ParseAddr(row[1])
 		if err != nil {
-			clog.Errorf("invalid end address #%s: %s", row[1], err)
-			return
+			return fmt.Errorf("invalid end address #%s: %s", row[1], err)
 		}
 		number, err := strconv.Atoi(row[2])
 		if err != nil {
-			clog.Errorf("invalid number address #%s: %s", row[2], err)
-			return
+			return fmt.Errorf("invalid number address #%s: %s", row[2], err)
 		}
 		db = append(db, AS{
 			Start:       start,
@@ -89,4 +85,5 @@ func download() {
 	// 	fmt.Println(rows)
 	// }
 	// fmt.Println(result)
+	return nil
 }

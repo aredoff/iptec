@@ -1,6 +1,8 @@
 package iptec
 
 import (
+	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -67,23 +69,30 @@ func (a *App) Activate() {
 }
 
 func (a *App) Find(address string) (*appReport, error) {
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return nil, fmt.Errorf("Cant read IP: %s", address)
+	}
 	if !a.activated {
 		a.Activate()
 	}
 	defer a.mu.Unlock()
 	a.mu.Lock()
 	var wg sync.WaitGroup
-	ch := make(chan interface{}, len(a.activatedPlugins))
+	ch := make(chan pluginReport, len(a.activatedPlugins))
 	for _, v := range a.activatedPlugins {
 		wg.Add(1)
 		go func(plugin Plugin) {
 			defer wg.Done()
-			res, err := plugin.Find(address)
+			rep, err := plugin.Find(ip)
 			if err != nil {
 				clog.Error(err)
 				return
 			}
-			ch <- res
+			ch <- pluginReport{
+				report: rep,
+				name:   plugin.Name(),
+			}
 		}(v)
 	}
 
@@ -93,14 +102,16 @@ func (a *App) Find(address string) (*appReport, error) {
 	}()
 
 	report := &appReport{
-		address: address,
-		date:    time.Now(),
-		plugins: []interface{}{},
+		Address: address,
+		Date:    time.Now(),
+		Plugins: map[string]PluginReport{},
 	}
-
+	points := 0
 	for result := range ch {
-		report.plugins = append(report.plugins, result)
+		report.Plugins[result.name] = result.report
+		points += result.report.Points()
 	}
+	report.Points = points
 	return report, nil
 }
 

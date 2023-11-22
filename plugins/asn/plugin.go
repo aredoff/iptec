@@ -2,12 +2,11 @@ package asn
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/aredoff/iptec"
-	clog "github.com/aredoff/iptec/log"
+	"github.com/aredoff/iptec/log"
 )
-
-var log = clog.NewWithPlugin("asn")
 
 func New() *Asn {
 	return &Asn{
@@ -27,7 +26,7 @@ func (p *Asn) Name() string {
 }
 
 func (p *Asn) Activate() error {
-	p.Log.Info("ACTIVATION " + p.Name())
+	p.Log.Info("Activation: ok")
 	// res, err := net.LookupTXT("8.8.8.8")
 	// if err != nil {
 	// 	fmt.Println(err)
@@ -46,7 +45,7 @@ func (p *Asn) Activate() error {
 	return nil
 }
 
-func (p *Asn) Find(address string) (interface{}, error) {
+func (p *Asn) Find(address net.IP) (AsnResult, error) {
 	a := AsnResult{
 		asn: "test",
 	}
