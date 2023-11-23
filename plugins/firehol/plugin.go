@@ -79,7 +79,6 @@ func (p *Firehol) Find(address net.IP) (iptec.PluginReport, error) {
 	list := p.data.Find(address)
 
 	a := fireholResult{
-		Name:  "firehol",
 		Lists: list,
 	}
 	return &a, nil

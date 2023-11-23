@@ -13,7 +13,8 @@ import (
 
 func NewCach() *cash {
 	opt := badger.DefaultOptions(filepath.Join(os.TempDir(), "iptec"))
-	opt.Logger = clog.NewWithPlugin("cash")
+	// opt.Logger = clog.NewWithPlugin("cash")
+	opt.Logger = nil
 	db, err := badger.Open(opt)
 	if err != nil {
 		log.Fatal(err)

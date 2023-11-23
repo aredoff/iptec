@@ -1,7 +1,6 @@
 package firehol
 
 type fireholResult struct {
-	Name  string   `json:"name"`
 	Lists []string `json:"lists"`
 }
 

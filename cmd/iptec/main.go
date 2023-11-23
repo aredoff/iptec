@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aredoff/iptec"
+	"github.com/aredoff/iptec/plugins/bogon"
 	"github.com/aredoff/iptec/plugins/firehol"
 )
 
@@ -14,8 +15,9 @@ func main() {
 	// a.Use(asn.New())
 	// a.Use(dns.New())
 	a.Use(firehol.New())
+	a.Use(bogon.New())
 	a.Activate()
-	report, err := a.Find("36.0.8.1")
+	report, err := a.Find("8.0.8.1")
 	if err != nil {
 		fmt.Println("error")
 	}
@@ -25,5 +27,4 @@ func main() {
 	}
 	fmt.Println(string(reportString))
 	// "something"
-	fmt.Println(report)
 }

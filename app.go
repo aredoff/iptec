@@ -62,6 +62,7 @@ func (a *App) Activate() {
 			a.mu.Lock()
 			a.activatedPlugins[plugin.Name()] = plugin
 			a.mu.Unlock()
+			clog.Info(fmt.Sprintf("Plugin/%s activated", plugin.Name()))
 		}(v)
 	}
 	wg.Wait()
@@ -71,7 +72,7 @@ func (a *App) Activate() {
 func (a *App) Find(address string) (*appReport, error) {
 	ip := net.ParseIP(address)
 	if ip == nil {
-		return nil, fmt.Errorf("Cant read IP: %s", address)
+		return nil, fmt.Errorf("cant read IP: %s", address)
 	}
 	if !a.activated {
 		a.Activate()
@@ -89,9 +90,11 @@ func (a *App) Find(address string) (*appReport, error) {
 				clog.Error(err)
 				return
 			}
-			ch <- pluginReport{
-				report: rep,
-				name:   plugin.Name(),
+			if rep.Points() != 0 {
+				ch <- pluginReport{
+					report: rep,
+					name:   plugin.Name(),
+				}
 			}
 		}(v)
 	}
