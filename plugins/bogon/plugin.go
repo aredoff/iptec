@@ -45,7 +45,6 @@ func (p *Bogon) Find(address net.IP) (iptec.PluginReport, error) {
 	isBogon := false
 	for _, v := range p.bogons {
 		if v.Contains(address) {
-			fmt.Println(v.String())
 			isBogon = true
 		}
 	}

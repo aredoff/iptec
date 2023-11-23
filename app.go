@@ -62,7 +62,7 @@ func (a *App) Activate() {
 			a.mu.Lock()
 			a.activatedPlugins[plugin.Name()] = plugin
 			a.mu.Unlock()
-			clog.Info(fmt.Sprintf("Plugin/%s activated", plugin.Name()))
+			clog.Info(fmt.Sprintf("plugin/%s activated", plugin.Name()))
 		}(v)
 	}
 	wg.Wait()

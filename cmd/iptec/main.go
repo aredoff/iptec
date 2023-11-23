@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aredoff/iptec"
-	"github.com/aredoff/iptec/plugins/bogon"
-	"github.com/aredoff/iptec/plugins/firehol"
+	"github.com/aredoff/iptec/plugins/dnsbl"
 )
 
 func main() {
@@ -14,10 +13,11 @@ func main() {
 	defer a.Close()
 	// a.Use(asn.New())
 	// a.Use(dns.New())
-	a.Use(firehol.New())
-	a.Use(bogon.New())
+	// a.Use(firehol.New())
+	// a.Use(bogon.New())
+	a.Use(dnsbl.New("8.8.8.8"))
 	a.Activate()
-	report, err := a.Find("8.0.8.1")
+	report, err := a.Find("2002:c000:200::1")
 	if err != nil {
 		fmt.Println("error")
 	}
