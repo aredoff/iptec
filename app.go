@@ -46,6 +46,11 @@ func (a *App) Use(p Plugin) {
 	if ok {
 		webclientMixin.webclientInitialization()
 	}
+
+	dnsclientMixin, ok := p.(dnsclientMixinInterface)
+	if ok {
+		dnsclientMixin.dnsclientInitialization()
+	}
 }
 
 func (a *App) Activate() {

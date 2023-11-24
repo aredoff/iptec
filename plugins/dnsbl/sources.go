@@ -141,7 +141,6 @@ var (
 	}
 
 	sourcesIpv6 = []string{
-		"dnsbl6.anticaptcha.net",
 		"all.v6.ascc.dnsbl.bit.nl",
 		"ipv6.all.dnsbl.bit.nl",
 		"bitonly.dnsbl.bit.nl",

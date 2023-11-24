@@ -1,4 +1,4 @@
-package dnsbl
+package tor
 
 import (
 	"encoding/hex"

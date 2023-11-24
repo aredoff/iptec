@@ -1,7 +1,9 @@
 package dnsbl
 
 import (
+	"fmt"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/aredoff/iptec"
@@ -11,17 +13,21 @@ const (
 	name = "dnsbl"
 )
 
-func New(resolver string) *Dnsbl {
+type providerResult struct {
+	dnsbl  string
+	exist  bool
+	reason string
+}
+
+func New() *Dnsbl {
 	return &Dnsbl{
-		name:     name,
-		resolver: resolver,
+		name: name,
 	}
 }
 
 type Dnsbl struct {
-	name     string
-	resolver string
-	client   *dnsblCLient
+	name string
+	iptec.DnsClient
 }
 
 func (p *Dnsbl) Name() string {
@@ -29,11 +35,6 @@ func (p *Dnsbl) Name() string {
 }
 
 func (p *Dnsbl) Activate() error {
-	var err error
-	p.client, err = newDnsblClient(p.resolver)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -43,7 +44,7 @@ func (p *Dnsbl) Find(address net.IP) (iptec.PluginReport, error) {
 		return nil, err
 	}
 	var wg sync.WaitGroup
-	ch := make(chan *addressResult, 16)
+	ch := make(chan *providerResult, 16)
 	var list []string
 	if address.To4() != nil {
 		list = sourcesIpv4
@@ -54,10 +55,23 @@ func (p *Dnsbl) Find(address net.IP) (iptec.PluginReport, error) {
 		wg.Add(1)
 		go func(provider string) {
 			defer wg.Done()
-			rep := p.client.Find(reverseAddress, provider)
-			if rep != nil {
-				rep.dnsbl = provider
-				ch <- rep
+			var res *providerResult
+			recordsA, err := p.Dns.A(fmt.Sprintf("%s.%s.", reverseAddress, provider))
+			if err == nil && len(recordsA) > 0 {
+				if checkArecord(recordsA[0]) {
+					res = &providerResult{
+						dnsbl:  provider,
+						exist:  true,
+						reason: "",
+					}
+					recoredsTXT, err := p.Dns.TXT(fmt.Sprintf("%s.%s.", reverseAddress, provider))
+					if err == nil && len(recoredsTXT) > 0 {
+						res.reason = strings.Join(recoredsTXT, ",")
+					}
+				}
+			}
+			if res != nil {
+				ch <- res
 			}
 		}(v)
 	}

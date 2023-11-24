@@ -1,4 +1,4 @@
-package firehol
+package tor
 
 import (
 	"fmt"
@@ -9,32 +9,33 @@ import (
 )
 
 const (
-	name = "firehol"
+	name  = "tor"
+	dnsel = "dnsel.torproject.org"
 )
 
-func New() *Firehol {
-	// log.Error("Blocking request. Unable to parse source address")
-	return &Firehol{
+func New() *Tor {
+	return &Tor{
 		name: name,
 	}
 }
 
-type Firehol struct {
+type Tor struct {
 	name string
+	data *torData
 	iptec.Сurator
-	iptec.Cash
 	iptec.WebClient
-	data *fireholData
+	iptec.DnsClient
+	iptec.Cash
 }
 
-func (p *Firehol) Name() string {
+func (p *Tor) Name() string {
 	return p.name
 }
 
-func (p *Firehol) Activate() error {
-	p.data = newFireholData()
+func (p *Tor) Activate() error {
+	p.data = newTorData()
 
-	data, err := p.Cash.Get("firehol")
+	data, err := p.Cash.Get("tor")
 	if err == nil {
 		p.Log.Info("Load data from cash.")
 		err := p.data.Deserialization(data)
@@ -43,7 +44,7 @@ func (p *Firehol) Activate() error {
 		}
 		return nil
 	}
-	p.Log.Info("Collect data from firehol.org.")
+	p.Log.Info("Collect data from sources")
 	for name, url := range sources {
 		r, err := p.Client.Get(url)
 		if err != nil {
@@ -57,12 +58,6 @@ func (p *Firehol) Activate() error {
 			if address != nil {
 				p.data.AddIp(name, address)
 
-			} else {
-				_, network, err := net.ParseCIDR(line)
-				if err != nil {
-					continue
-				}
-				p.data.AddNet(name, *network)
 			}
 		}
 	}
@@ -71,18 +66,34 @@ func (p *Firehol) Activate() error {
 	if err != nil {
 		return err
 	}
-	err = p.Cash.Set("firehol", data)
+	err = p.Cash.Set("tor", data)
 	if err != nil {
 		return fmt.Errorf("cant set in cash data, err=%s", err)
 	}
 	return nil
 }
 
-func (p *Firehol) Find(address net.IP) (iptec.PluginReport, error) {
-	list := p.data.Find(address)
+func (p *Tor) Find(address net.IP) (iptec.PluginReport, error) {
+	report := &torResult{}
 
-	a := fireholResult{
-		Lists: list,
+	reverseAddress, err := reverseIP(address)
+	if err != nil {
+		return nil, err
 	}
-	return &a, nil
+	recordsA, err := p.Dns.A(fmt.Sprintf("%s.%s.", reverseAddress, dnsel))
+	if err == nil && len(recordsA) > 0 {
+		if checkArecord(recordsA[0]) {
+			report.Detect = true
+			report.Proofs = []string{dnsel}
+			return report, nil
+		}
+	}
+
+	finds := p.data.Find(address)
+	if len(finds) > 0 {
+		report.Detect = true
+		report.Proofs = finds
+	}
+
+	return report, nil
 }
