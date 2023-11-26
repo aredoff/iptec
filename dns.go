@@ -1,15 +1,15 @@
 package iptec
 
-import "github.com/aredoff/iptec/dnslient"
+import "github.com/aredoff/iptec/dnsclient"
 
 type dnsclientMixinInterface interface {
 	dnsclientInitialization()
 }
 
 type DnsClient struct {
-	Dns *dnslient.Dns
+	Dns *dnsclient.Dns
 }
 
 func (m *DnsClient) dnsclientInitialization() {
-	m.Dns = dnslient.New()
+	m.Dns = dnsclient.New()
 }

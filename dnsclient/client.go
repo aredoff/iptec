@@ -1,4 +1,4 @@
-package dnslient
+package dnsclient
 
 import (
 	"context"
