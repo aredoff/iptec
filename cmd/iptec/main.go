@@ -5,10 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aredoff/iptec"
-	"github.com/aredoff/iptec/plugins/bogon"
-	"github.com/aredoff/iptec/plugins/dnsbl"
-	"github.com/aredoff/iptec/plugins/firehol"
-	"github.com/aredoff/iptec/plugins/tor"
+	"github.com/aredoff/iptec/plugins/blacklist"
 )
 
 func main() {
@@ -16,12 +13,13 @@ func main() {
 	defer a.Close()
 	// a.Use(asn.New())
 	// a.Use(dns.New())
-	a.Use(firehol.New())
-	a.Use(bogon.New())
-	a.Use(dnsbl.New())
-	a.Use(tor.New())
+	// a.Use(firehol.New())
+	// a.Use(bogon.New())
+	// a.Use(dnsbl.New())
+	// a.Use(tor.New())
+	a.Use(blacklist.New())
 	a.Activate()
-	report, err := a.Find("1.1.1.1")
+	report, err := a.Find("103.158.80.1")
 	// report, err := a.Find("2002:c000:200::1")
 	// report, err := a.Find("192.42.116.195")
 	// report, err := a.Find("2a0b:f4c2::29")
