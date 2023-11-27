@@ -30,59 +30,67 @@ func (p *Blacklist) Name() string {
 	return p.name
 }
 
+func (p *Blacklist) loadList(s *source) ([]string, error) {
+	data, err := p.Cash.Get(s.Name)
+	if err == nil {
+		lines, err := deserialization(data)
+		if err != nil {
+			return nil, err
+		}
+		// p.Log.Info(fmt.Sprintf("Load data from cash. [%s]", s.Name))
+		return lines, nil
+	}
+
+	r, err := p.Client.Get(s.Url)
+	if err != nil {
+		return nil, fmt.Errorf("load data from cash. [%s] Error: %s", name, err)
+	}
+	if r.StatusCode != 200 {
+		return nil, fmt.Errorf("load data from cash. [%s] Status code=%d", name, r.StatusCode)
+	}
+
+	lines := s.extractor(string(r.Body))
+
+	data, err = serialization(lines)
+	if err != nil {
+		return nil, fmt.Errorf("cant serialization lines, err=%s", err)
+	}
+	err = p.Cash.Set(s.Name, data)
+	if err != nil {
+		return nil, fmt.Errorf("cant set in cash data, err=%s", err)
+	}
+	// p.Log.Info(fmt.Sprintf("Load data from source. [%s]", s.Name))
+	return lines, nil
+}
+
 type parsedSource struct {
 	Lines  []string
 	Source *source
+	Err    error
 }
 
-func (p *Blacklist) loadLists(ss []*source) ([]*parsedSource, error) {
+func (p *Blacklist) Activate() error {
+	p.data = newBlacklist()
+
 	var wg sync.WaitGroup
 	ch := make(chan *parsedSource, len(sources))
 
-	for _, v := range ss {
-		data, err := p.Cash.Get(v.Name)
-		if err == nil {
-			lines, err := deserialization(data)
-			if err != nil {
-				return nil, err
-			}
-			ch <- &parsedSource{
-				Lines:  lines,
-				Source: v,
-			}
-			p.Log.Info(fmt.Sprintf("Load data from cash. [%s]", v.Name))
-			continue
-		}
+	for _, v := range sources {
 		wg.Add(1)
 		go func(s *source) {
 			defer wg.Done()
 
-			r, err := p.Client.Get(s.Url)
+			lines, err := p.loadList(s)
 			if err != nil {
-				p.Log.Error(fmt.Sprintf("Load data from cash. [%s] Error: %s", name, err))
-				return
+				ch <- &parsedSource{
+					Err:    err,
+					Source: s,
+				}
 			}
-			if r.StatusCode != 200 {
-				p.Log.Error(fmt.Sprintf("Load data from cash. [%s] Status code=%d", name, r.StatusCode))
-				return
-			}
-			parsed := &parsedSource{
-				Lines:  s.extractor(string(r.Body)),
+			ch <- &parsedSource{
+				Lines:  lines,
 				Source: s,
 			}
-			data, err := serialization(parsed.Lines)
-			if err != nil {
-				p.Log.Error(fmt.Sprintf("cant serialization lines, err=%s", err))
-				return
-			}
-			err = p.Cash.Set(s.Name, data)
-			if err != nil {
-				p.Log.Error(fmt.Sprintf("cant set in cash data, err=%s", err))
-				return
-			}
-
-			p.Log.Info(fmt.Sprintf("Load data from source. [%s]", s.Name))
-			ch <- parsed
 		}(v)
 	}
 
@@ -91,45 +99,20 @@ func (p *Blacklist) loadLists(ss []*source) ([]*parsedSource, error) {
 		close(ch)
 	}()
 
-	sourcesLists := []*parsedSource{}
-
 	for parsedSources := range ch {
-		exist, err := p.Cash.Exist(parsedSources.Source.Name)
-		if err != nil {
-			return nil, fmt.Errorf("cant check exist in cash data, err=%s", err)
+		if parsedSources.Err != nil {
+			return parsedSources.Err
 		}
-		if !exist {
-			data, err := serialization(parsedSources.Lines)
-			if err != nil {
-				return nil, fmt.Errorf("cant serialization lines, err=%s", err)
-			}
-			err = p.Cash.Set(parsedSources.Source.Name, data)
-			if err != nil {
-				return nil, fmt.Errorf("cant set in cash data, err=%s", err)
-			}
-		}
-		sourcesLists = append(sourcesLists, parsedSources)
-	}
-	return sourcesLists, nil
-}
-
-func (p *Blacklist) Activate() error {
-	p.data = newBlacklist()
-	parsedSources, err := p.loadLists(sources)
-	if err != nil {
-		return err
-	}
-	for _, s := range parsedSources {
-		for _, line := range s.Lines {
+		for _, line := range parsedSources.Lines {
 			address := net.ParseIP(line)
 			if address != nil {
-				p.data.AddIp(address, s.Source)
+				p.data.AddIp(address, parsedSources.Source)
 			} else {
 				_, network, err := net.ParseCIDR(line)
 				if err != nil {
 					continue
 				}
-				p.data.AddNet(*network, s.Source)
+				p.data.AddNet(*network, parsedSources.Source)
 			}
 		}
 	}
