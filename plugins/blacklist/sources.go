@@ -1,11 +1,11 @@
 package blacklist
 
 var (
-	sources = []source{}
+	sources = []*source{}
 )
 
-func newSource(name, url string, extractor func(string) []string, points int) source {
-	return source{
+func newSource(name, url string, extractor func(string) []string, points int) *source {
+	return &source{
 		Name:      name,
 		Url:       url,
 		Points:    points,

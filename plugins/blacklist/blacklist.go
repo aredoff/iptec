@@ -1,8 +1,6 @@
 package blacklist
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"net"
 	"strings"
@@ -13,18 +11,13 @@ type ipSources struct {
 	Sources []*source
 }
 
-func (ss ipSources) AddSource(s *source) {
-	var find bool
+func (ss *ipSources) AddSource(s *source) {
 	for _, v := range ss.Sources {
 		if s.Name == v.Name {
-			find = true
-			break
+			return
 		}
 	}
-	// ss.Sources = append(ss.Sources, s)
-	if !find {
-		ss.Sources = append(ss.Sources, s)
-	}
+	ss.Sources = append(ss.Sources, s)
 }
 
 type netSources struct {
@@ -32,71 +25,51 @@ type netSources struct {
 	Sources []*source
 }
 
-func (ss netSources) AddSource(s *source) {
-	var find bool
+func (ss *netSources) AddSource(s *source) {
 	for _, v := range ss.Sources {
 		if s.Name == v.Name {
-			find = true
-			break
+			return
 		}
 	}
-	if !find {
-		ss.Sources = append(ss.Sources, s)
-	}
+	ss.Sources = append(ss.Sources, s)
 }
 
-func newBlacklist(sources []source) *blacklist {
-	newSources := map[string]source{}
-	for _, v := range sources {
-		newSources[v.Name] = v
-	}
+func newBlacklist() *blacklist {
 	return &blacklist{
-		Ips:     map[string]ipSources{},
-		Nets:    map[string]netSources{},
-		Sources: newSources,
+		Ips:  map[string]*ipSources{},
+		Nets: map[string]*netSources{},
 	}
 }
 
 type blacklist struct {
-	Ips     map[string]ipSources
-	Nets    map[string]netSources
-	Sources map[string]*source
+	Ips  map[string]*ipSources
+	Nets map[string]*netSources
 }
 
-func (l *blacklist) AddIp(ip net.IP, sourceName string) error {
-
-	_, ok := l.Sources[sourceName]
+func (l *blacklist) AddIp(ip net.IP, s *source) error {
+	_, ok := l.Ips[ip.String()]
 	if !ok {
-		return fmt.Errorf("source %s dont exist", sourceName)
-	}
-
-	_, ok = l.Ips[ip.String()]
-	if !ok {
-		l.Ips[ip.String()] = ipSources{
+		l.Ips[ip.String()] = &ipSources{
 			Ip:      ip,
 			Sources: []*source{},
 		}
-		l.Ips[ip.String()].AddSource(&l.Sources[sourceName])
+		l.Ips[ip.String()].AddSource(s)
 	} else {
-		l.Ips[ip.String()].AddSource(&s)
+		l.Ips[ip.String()].AddSource(s)
 	}
 	return nil
 }
 
-func (l *blacklist) AddNet(network net.IPNet, sourceName string) error {
-	s, ok := l.Sources[sourceName]
+func (l *blacklist) AddNet(network net.IPNet, s *source) error {
+	_, ok := l.Nets[network.String()]
 	if !ok {
-		return fmt.Errorf("source %s dont exist", sourceName)
-	}
-
-	_, ok = l.Nets[network.String()]
-	if !ok {
-		l.Nets[network.String()] = netSources{
+		l.Nets[network.String()] = &netSources{
 			Net:     network,
-			Sources: []*source{&s},
+			Sources: []*source{},
 		}
+		l.Nets[network.String()].AddSource(s)
 	} else {
-		l.Nets[network.String()].AddSource(&s)
+		l.Nets[network.String()].AddSource(s)
 	}
 	return nil
 }
@@ -133,24 +106,4 @@ func (l *blacklist) List() []string {
 	}
 
 	return res
-}
-
-func (l *blacklist) Serialization() ([]byte, error) {
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
-	err := encoder.Encode(&l)
-	if err != nil {
-		return nil, fmt.Errorf("cant serialize blacklist, err=%s", err)
-	}
-	return buffer.Bytes(), nil
-}
-
-func (l *blacklist) Deserialization(data []byte) error {
-	buffer := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buffer)
-	err := decoder.Decode(&l)
-	if err != nil {
-		return fmt.Errorf("cant deserialize blacklist, err=%s", err)
-	}
-	return nil
 }
