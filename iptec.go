@@ -9,6 +9,8 @@ import (
 	clog "github.com/aredoff/iptec/log"
 )
 
+const Version = "0.0.5"
+
 func New() *App {
 	return &App{
 		plugins:          map[string]Plugin{},
