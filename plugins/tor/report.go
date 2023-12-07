@@ -1,11 +1,11 @@
 package tor
 
-type torResult struct {
+type Report struct {
 	Detect bool     `json:"detect"`
 	Proofs []string `json:"proofs"`
 }
 
-func (r *torResult) Points() int {
+func (r *Report) Points() int {
 	if r.Detect {
 		return 10
 	}

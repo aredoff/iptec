@@ -74,7 +74,7 @@ func (p *Tor) Activate() error {
 }
 
 func (p *Tor) Find(address net.IP) (iptec.PluginReport, error) {
-	report := &torResult{}
+	report := &Report{}
 
 	reverseAddress, err := reverseIP(address)
 	if err != nil {

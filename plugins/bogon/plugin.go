@@ -48,7 +48,7 @@ func (p *Bogon) Find(address net.IP) (iptec.PluginReport, error) {
 			isBogon = true
 		}
 	}
-	return &bogonResult{
+	return &Report{
 		Bogon: isBogon,
 	}, nil
 }

@@ -1,9 +1,9 @@
 package dnsbl
 
-type dnsblResult struct {
+type Report struct {
 	Lists map[string]string `json:"lists"`
 }
 
-func (r *dnsblResult) Points() int {
+func (r *Report) Points() int {
 	return len(r.Lists)
 }

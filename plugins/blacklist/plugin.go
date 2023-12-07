@@ -131,7 +131,7 @@ func (p *Blacklist) Find(address net.IP) (iptec.PluginReport, error) {
 		srcslist = append(srcslist, v.Name)
 	}
 
-	a := blacklistResult{
+	a := Report{
 		Lists:  srcslist,
 		points: points,
 	}

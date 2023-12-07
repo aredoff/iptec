@@ -81,7 +81,7 @@ func (p *Dnsbl) Find(address net.IP) (iptec.PluginReport, error) {
 		close(ch)
 	}()
 
-	report := &dnsblResult{
+	report := &Report{
 		Lists: map[string]string{},
 	}
 

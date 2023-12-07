@@ -1,10 +1,10 @@
 package bogon
 
-type bogonResult struct {
+type Report struct {
 	Bogon bool `json:"bogon"`
 }
 
-func (r *bogonResult) Points() int {
+func (r *Report) Points() int {
 	if r.Bogon {
 		return 100
 	}
